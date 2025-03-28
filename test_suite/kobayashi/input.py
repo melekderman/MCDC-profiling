@@ -74,7 +74,7 @@ mcdc.tally.mesh_tally(
 )
 
 # Setting
-mcdc.setting(N_particle=1e3, N_batch=50)
+mcdc.setting(N_particle=1e5, N_batch=2)
 
 # Run
 mcdc.run()

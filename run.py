@@ -20,8 +20,10 @@ JOB_SCHEDULER["dane"] = 'slurm'
 
 parser = argparse.ArgumentParser(description="MC/DC Profiling Test Suite")
 parser.add_argument("--name", type=str, default="ALL", help="Name of the task to run")
-parser.add_argument("--N_particle", type=lambda x: int(float(x)), default=None, 
+parser.add_argument("--N_particle", type=lambda x: int(float(x)), default=None,
                     help="Number of particles")
+parser.add_argument("--Time", type=lambda x: int(float(x)), default=None,
+                    help="Time")
 parser.add_argument("--profile_tool", type=str, choices=["cProfile"], default="cProfile",
                     help="Profiling tool to use (default: cProfile)")
 parser.add_argument("--mode", type=str, choices=["python", "numba"], default="python",
@@ -81,14 +83,22 @@ for problem in tasks:
     os.chdir(problem_dir)
 
     # Task parameters
-    task = tasks[problem]
+    if args.mode == "python":
+        task = tasks[problem]["python"]
+    else:
+        sys.exit("[ERROR] Only python mode is currently supported.")
+
     if args.N_particle is not None:
         N_particle = args.N_particle
     else:
         N_particle = task["N_particle"]
-    job_time = task["Time"]
 
-    # Decide on output file paths based on the output_folder argument
+    if args.Time is not None:
+        job_time = args.Time
+    else:
+        job_time = task["Time"]
+
+    # Decide on output file paths based on the --output_folder argument
     if args.output_folder:
         prof_file = os.path.join(output_dir, f"output_{problem}_{N_particle}p.prof")
         png_file = os.path.join(output_dir, f"profile_{problem}_{N_particle}p.png")
@@ -98,7 +108,8 @@ for problem in tasks:
 
     # Build the profiling command based on the selected profiling tool (only cProfile option for now)
     if args.profile_tool != "cProfile":
-        sys.exit("Error: Only cProfile is currently supported.")
+        sys.exit("[ERROR] Only cProfile is currently supported.")
+
     cmd_prof = f"python -m cProfile -o {prof_file} ../input.py --mode={args.mode}\n"
 
     # Build the commands string
@@ -111,7 +122,7 @@ for problem in tasks:
     # Create the PBS file by replacing placeholders in the template
     pbs_text = pbs_template[:]
     pbs_text = pbs_text.replace("<N_NODE>", "1")
-    pbs_text = pbs_text.replace("<JOB_NAME>", f"profile-{problem}-{args.mode}")
+    pbs_text = pbs_text.replace("<JOB_NAME>", f"profile-{args.mode}-{problem}")
     pbs_text = pbs_text.replace("<TIME>", job_time)
     pbs_text = pbs_text.replace("<CASE>", "")
     pbs_text = pbs_text.replace("<COMMANDS>", commands)
@@ -122,6 +133,9 @@ for problem in tasks:
 
     # Submit the job
     os.system(f"{job_submission} submit.pbs")
+    
+    # Delete the PBS file
+    os.remove("submit.pbs")
 
     # Return to the base directory before processing the next problem
     os.chdir(base_dir)

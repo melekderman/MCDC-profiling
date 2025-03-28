@@ -302,7 +302,7 @@ mcdc.tally.mesh_tally(
 # Setting
 #mcdc.setting(N_particle=1e5)
 mcdc.setting(N_particle=1e3)
-mcdc.eigenmode(N_inactive=50, N_active=150, gyration_radius="all")
+mcdc.eigenmode(N_inactive=5, N_active=20, gyration_radius="all")
 mcdc.population_control()
 
 # Run
