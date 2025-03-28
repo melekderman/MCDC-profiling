@@ -107,7 +107,7 @@ for problem in tasks:
         png_file = f"profile_{N_particle}p.png"
 
     # Build the profiling command based on the selected profiling tool
-    # (only cProfile option for now)
+    # (only cProfile option available for now)
     if args.profile_tool != "cProfile":
         sys.exit("[ERROR] Only cProfile is currently supported.")
 

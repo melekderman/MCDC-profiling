@@ -1188,7 +1188,7 @@ mcdc.tally.mesh_tally(
 )
 
 # Setting
-mcdc.setting(N_particle=1e3, census_bank_buff=2)
+mcdc.setting(N_particle=1e3, progress_bar=False, census_bank_buff=2)
 
 # Run
 mcdc.run()
