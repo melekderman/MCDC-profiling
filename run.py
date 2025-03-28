@@ -20,6 +20,8 @@ JOB_SCHEDULER["dane"] = 'slurm'
 
 parser = argparse.ArgumentParser(description="MC/DC Profiling Test Suite")
 parser.add_argument("--name", type=str, default="ALL", help="Name of the task to run")
+parser.add_argument("--N_particle", type=lambda x: int(float(x)), default=None, 
+                    help="Number of particles")
 parser.add_argument("--profile_tool", type=str, choices=["cProfile"], default="cProfile",
                     help="Profiling tool to use (default: cProfile)")
 parser.add_argument("--mode", type=str, choices=["python", "numba"], default="python",
@@ -80,17 +82,19 @@ for problem in tasks:
 
     # Task parameters
     task = tasks[problem]
-    N_particle = task["N_particle"]
-    N_batch = task["N_batch"]
+    if args.N_particle is not None:
+        N_particle = args.N_particle
+    else:
+        N_particle = task["N_particle"]
     job_time = task["Time"]
 
     # Decide on output file paths based on the output_folder argument
     if args.output_folder:
-        prof_file = os.path.join(output_dir, f"output_{problem}_{N_particle}p_{N_batch}b.prof")
-        png_file = os.path.join(output_dir, f"profile_{problem}_{N_particle}p_{N_batch}b.png")
+        prof_file = os.path.join(output_dir, f"output_{problem}_{N_particle}p.prof")
+        png_file = os.path.join(output_dir, f"profile_{problem}_{N_particle}p.png")
     else:
-        prof_file = f"output_{N_particle}p_{N_batch}b.prof"
-        png_file = f"profile_{N_particle}p_{N_batch}b.png"
+        prof_file = f"output_{N_particle}p.prof"
+        png_file = f"profile_{N_particle}p.png"
 
     # Build the profiling command based on the selected profiling tool (only cProfile option for now)
     if args.profile_tool != "cProfile":
@@ -107,7 +111,7 @@ for problem in tasks:
     # Create the PBS file by replacing placeholders in the template
     pbs_text = pbs_template[:]
     pbs_text = pbs_text.replace("<N_NODE>", "1")
-    pbs_text = pbs_text.replace("<JOB_NAME>", f"profile-{problem}")
+    pbs_text = pbs_text.replace("<JOB_NAME>", f"profile-{problem}-{args.mode}")
     pbs_text = pbs_text.replace("<TIME>", job_time)
     pbs_text = pbs_text.replace("<CASE>", "")
     pbs_text = pbs_text.replace("<COMMANDS>", commands)
