@@ -1,5 +1,6 @@
 import argparse
 import os
+import sys
 import yaml
 
 from pathlib import Path
@@ -13,9 +14,6 @@ JOB_SUBMISSION["dane"] = 'sbatch'
 JOB_SCHEDULER = {}
 JOB_SCHEDULER["dane"] = 'slurm'
 
-JOB_TIME = {}
-JOB_TIME['dane'] = "24:00:00"
-
 # ======================================================================================
 # Command-line arguments
 # ======================================================================================
@@ -28,33 +26,33 @@ parser.add_argument("--mode", type=str, choices=["python", "numba"], default="py
                     help="Select the mode to run (default: python)")
 parser.add_argument("--platform", type=str, required=False, choices=PLATFORMS, default="dane",
                     help="Platform to run the tests on")
-parser.add_argument("--output_folder", default=False, action="output_folder_true",
+parser.add_argument("--output_folder", default=False, action="store_true",
                     help="Save the results to a folder")
+parser.add_argument("--save_recent_output", default=False, action="store_true",
+                    help="If set True, keep the .prof file. Otherwise, it will be removed after generating the PNG.")
 args, unargs = parser.parse_known_args()
 
-# ======================================================================================
-# Platform settings
-# ======================================================================================
-
+# Get the platform-specific job submission and scheduler commands
 platform = args.platform
 job_submission = JOB_SUBMISSION[platform]
 job_scheduler = JOB_SCHEDULER[platform]
-job_time = JOB_TIME[platform]
-
-# Get the PBS template
-with open("template.pbs", 'r') as f:
-    pbs_template = f.read()
 
 # ======================================================================================
 # Preparation
 # ======================================================================================
 
-# Read the tasks
-os.chdir("../../../")
-with open("task.yaml", "r") as file:
-    tasks = yaml.safe_load(file)
-
+# Get the base directory
 base_dir = os.getcwd()
+
+# Read the PBS template
+template_path = os.path.join(base_dir, "template.pbs")
+with open(template_path, 'r') as f:
+    pbs_template = f.read()
+
+# Read the tasks
+task_yaml_path = os.path.join(base_dir, "task.yaml")
+with open(task_yaml_path, "r") as file:
+    tasks = yaml.safe_load(file)
 
 # If --output_folder is set, create a top-level folder "output"
 if args.output_folder:
@@ -84,7 +82,7 @@ for problem in tasks:
     task = tasks[problem]
     N_particle = task["N_particle"]
     N_batch = task["N_batch"]
-    P_Time = task["Time"]
+    job_time = task["Time"]
 
     # Decide on output file paths based on the output_folder argument
     if args.output_folder:
@@ -93,3 +91,33 @@ for problem in tasks:
     else:
         prof_file = f"output_{N_particle}p_{N_batch}b.prof"
         png_file = f"profile_{N_particle}p_{N_batch}b.png"
+
+    # Build the profiling command based on the selected profiling tool (only cProfile option for now)
+    if args.profile_tool != "cProfile":
+        sys.exit("Error: Only cProfile is currently supported.")
+    cmd_prof = f"python -m cProfile -o {prof_file} ../input.py --mode={args.mode}\n"
+
+    # Build the commands string
+    commands = ""
+    commands += cmd_prof
+    commands += f"gprof2dot -f pstats --colour-nodes-by-selftime {prof_file} | dot -Tpng -o {png_file}\n"
+    if not args.save_recent_output:
+        commands += f"rm {prof_file}\n"
+
+    # Create the PBS file by replacing placeholders in the template
+    pbs_text = pbs_template[:]
+    pbs_text = pbs_text.replace("<N_NODE>", "1")
+    pbs_text = pbs_text.replace("<JOB_NAME>", f"profile-{problem}")
+    pbs_text = pbs_text.replace("<TIME>", job_time)
+    pbs_text = pbs_text.replace("<CASE>", "")
+    pbs_text = pbs_text.replace("<COMMANDS>", commands)
+
+    # Write the PBS file in the problem folder
+    with open("submit.pbs", "w") as f:
+        f.write(pbs_text)
+
+    # Submit the job
+    os.system(f"{job_submission} submit.pbs")
+
+    # Return to the base directory before processing the next problem
+    os.chdir(base_dir)
