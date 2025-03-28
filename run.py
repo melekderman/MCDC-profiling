@@ -106,16 +106,19 @@ for problem in tasks:
         prof_file = f"output_{N_particle}p.prof"
         png_file = f"profile_{N_particle}p.png"
 
-    # Build the profiling command based on the selected profiling tool (only cProfile option for now)
+    # Build the profiling command based on the selected profiling tool
+    # (only cProfile option for now)
     if args.profile_tool != "cProfile":
         sys.exit("[ERROR] Only cProfile is currently supported.")
 
-    cmd_prof = f"python -m cProfile -o {prof_file} ../input.py --mode={args.mode}\n"
+    cmd_prof = f"python -m cProfile -o {prof_file} input.py --mode={args.mode}\n"
 
     # Build the commands string
     commands = ""
     commands += cmd_prof
-    commands += f"gprof2dot -f pstats --colour-nodes-by-selftime {prof_file} | dot -Tpng -o {png_file}\n"
+    commands += f"gprof2dot -f pstats --colour-nodes-by-selftime {prof_file}"
+    commands += f" | dot -Tpng -o {png_file}\n"
+
     if not args.save_recent_output:
         commands += f"rm {prof_file}\n"
 
