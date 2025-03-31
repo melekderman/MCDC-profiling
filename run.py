@@ -126,7 +126,7 @@ for problem in tasks:
     pbs_text = pbs_template[:]
     pbs_text = pbs_text.replace("<N_NODE>", "1")
     pbs_text = pbs_text.replace("<JOB_NAME>", f"profile-{args.mode}-{problem}")
-    pbs_text = pbs_text.replace("<TIME>", job_time)
+    pbs_text = pbs_text.replace("<TIME>", str(job_time))
     pbs_text = pbs_text.replace("<CASE>", f"{problem}")
     pbs_text = pbs_text.replace("<COMMANDS>", commands)
 
