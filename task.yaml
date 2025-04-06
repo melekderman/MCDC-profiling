@@ -1,0 +1,49 @@
+azurv1:
+    python:
+        N_particle: 1e3
+        Time: 01:00:00
+
+c5ce_kinetic:
+    python:
+        N_particle: 1e3
+        Time: 24:00:00
+
+c5g7_orig:
+    python:
+        N_particle: 1e3
+        Time: 24:00:00
+
+c5g7_kinetic:
+    python:
+        N_particle: 1e3
+        Time: 24:00:00
+
+kobayashi:
+    python:
+        N_particle: 1e5
+        Time: 01:00:00
+
+pincell:
+    python:
+        N_particle: 1e3
+        Time: 01:00:00
+
+shem361:
+    python:
+        N_particle: 1e3
+        Time: 03:00:00
+
+smr_dep_kinetic:
+    python:
+        N_particle: 1e3
+        Time: 24:00:00
+
+smr_fresh_kinetic:
+    python:
+        N_particle: 1e3
+        Time: 36:00:00
+
+smr_mg_kinetic:
+    python:
+        N_particle: 1e3
+        Time: 36:00:00
